@@ -1,0 +1,64 @@
+on: push
+name: 🚀 Deploy App...
+jobs:
+  app-deploy:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    name: 🎉 Deploy to Raspberry
+    runs-on: raspberry-meiman
+    steps:
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v2
+
+      # - name: 🕓 Delayed 10 Second
+      #   run: |
+      #     sleep 10
+
+      - name: 📡 Send Volumes (raspberry)
+        run: |
+          mkdir -p /home/jaya/volumes/${{ github.event.repository.name }}
+          mv -f ./volumes/* /home/jaya/volumes/${{ github.event.repository.name }}/ || true
+          rm -rf volumes || true
+
+      - name: 🌊 Install Dependencies
+        run: |
+          yarn
+
+      # - name: 🎯 Test...
+      #   run: npm run test
+      #   env:
+      #     CI: true
+
+      - name: ⚒️ Build
+        run: |
+          pwd
+          yarn build
+
+      - name: 🚫 Remove Meta Files & Folders
+        run: |
+          rm -rf .git
+          rm -rf .github
+          rm -rf .vscode || true
+          rm -rf node_modules || true
+          rm -rf src
+          rm .gitignore
+          rm package-lock.json || true
+          rm package.json
+          rm README.md
+          rm yarn.lock || true
+          rm yarn-error.log || true
+
+      - name: 📁 Top Level Change
+        run: |
+          mv -v ./build/* ./
+          rm -rf build
+
+      - name: 💯 Configuration for Production
+        run: |
+          sed -i 's/DB_LOG=true/DB_LOG=false/g' .env || true
+
+      - name: 📡 Remote Finishing (raspberry)
+        run: | 
+          mkdir -p /home/jaya/apps/${{ github.event.repository.name }}
+          rm -rf /home/jaya/apps/${{ github.event.repository.name }}/*
+          cp -R . /home/jaya/apps/${{ github.event.repository.name }}
+          rm -rf *
